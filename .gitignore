@@ -3,3 +3,7 @@
 .RData
 .Ruserdata
 data/orthophotos
+*.inp
+*.out
+*.res
+*.vcv
