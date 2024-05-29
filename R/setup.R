@@ -1,0 +1,17 @@
+library(sf)
+library(dplyr)
+library(data.table)
+library(ggplot2)
+library(ggspatial)
+library(terra)
+library(tidyterra)
+library(lubridate)
+library(tidyr)
+library(mapview)
+library(ggpubr)
+
+library(magrittr)
+library(RMark)
+library(tidyr)
+library(dplyr)
+
