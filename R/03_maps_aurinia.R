@@ -21,6 +21,8 @@ falter_complete <- st_read("data/aurinia/aurinia_observations_complete.shp")
 
 falter_recapt_cent <- st_read("data/aurinia/aurinia_observations_recaptures.shp")
 
+falter_lines <- st_read("data/aurinia/aurinia_recaptures_lines.shp")
+
 # crop orthophoto hainich
 ortho_nlp <- terra::rast("data/orthophotos/dop_hainich_2020.tif") 
 mybox_nlp <- st_buffer(plots %>% filter(cluster <6), dist=250) %>% st_transform(crs=25832)
@@ -32,119 +34,9 @@ mybox_krb <- st_buffer(plots %>% filter(cluster == 6), dist=300) %>% st_transfor
 ortho_krb <- crop(ortho_krb, mybox_krb)
 
 
-##### captures maps #####
 
-plots_captures_buf <- st_buffer(plots_captures, dist=0.5)
+##### calculations #####
 
-map_nlp_capt <- ggplot() + 
-  geom_spatraster_rgb(data = ortho_nlp, alpha=0.8) +
-  geom_sf(data=nlp_außen %>% st_crop(st_bbox(mybox_nlp)), 
-          linewidth=1, lty=1, col="black", fill=NA)+
-  geom_sf(data=nlp_schutz %>% st_crop(st_bbox(mybox_nlp)), 
-          linewidth=0.7, lty=2, col="black", , fill=NA)+
-  geom_sf(data=plots_captures_buf %>% filter(cluster < 6 & ncap > 0), 
-          aes(col=ncap_rel, fill=ncap_rel), linewidth=0.6, size=1, alpha=0.4)+
-  geom_sf(data=plots_captures_buf %>% filter(cluster < 6 & ncap == 0), 
-          linewidth=0.6, fill="grey75")+
-  theme_bw()+
-  #scale_fill_viridis_c(option = "magma", trans="reverse")+
-  scale_color_distiller(breaks=c(0.5, seq(10, 50, 10)),
-                        palette="YlOrRd", direction=1,
-                        limits = c(min(plots_captures$ncap_rel), max(plots_captures$ncap_rel)))+
-  scale_fill_distiller(breaks=c(0.5, seq(10, 50, 10)),
-                       palette="YlOrRd", direction=1,
-                       limits = c(min(plots_captures$ncap_rel), max(plots_captures$ncap_rel)))+
-  geom_sf(data=falter_complete %>% filter(cluster < 6), fill="black", size= 0.1, alpha=0.25)+
-  theme(axis.text=element_text(size=6),
-        axis.title=element_text(size=6),
-        legend.text = element_text(size = 9),
-        legend.title = element_text(size = 10),
-        legend.position = "bottom",
-        # legend.direction = "horizontal",
-        legend.position.inside = c(1.14, 0.12),
-        legend.key.height = unit(0.2, "cm"),
-        legend.key.width = unit(1, "cm"),
-        #legend.background = element_blank(),
-        legend.background = element_rect(fill="white", colour ="white"),
-        legend.spacing.x = unit(0.15, 'cm'))+
-  #ylab("Latitude") + xlab("Longitude") +
-  annotation_scale(line_width = 1, style="ticks", location="bl",
-                   pad_x = unit(0.75, "cm"),
-                   pad_y = unit(0.2, "cm"),)+
-  annotation_north_arrow(height=unit(0.65, "cm"),
-                         width=unit(0.4, "cm"),
-                         location="bl",
-                         pad_x = unit(0.16, "cm"),
-                         pad_y = unit(0.2, "cm"),
-                         style=north_arrow_orienteering(
-                           line_width = 1,
-                           fill = c("black", "black"),
-                           text_size = 8,
-                           text_angle = 0
-                         ))+
-  labs(#title = "Hainich", 
-    #caption = "Orthophoto 2020: (c) GDI-TH",
-    col="captured individuals \n per ha and hour")+
-  scale_y_continuous(expand = c(0, 0))+
-  scale_x_continuous(expand = c(0, 0))+
-  guides(fill = FALSE)
-
-map_nlp_capt
-
-map_krb_capt <- ggplot() + 
-  geom_spatraster_rgb(data = ortho_krb, alpha=0.8) +
-  geom_sf(data=plots_captures_buf %>% filter(cluster == 6 & ncap > 0), 
-          aes(col=ncap_rel, fill=ncap_rel), linewidth=0.6, size=1, alpha=0.4)+
-  geom_sf(data=plots_captures_buf %>% filter(cluster == 6 & ncap == 0), 
-          linewidth=0.6, fill="grey75")+
-  theme_bw()+
-  geom_sf(data=falter_complete %>% filter(cluster == 6), 
-          fill="black", size= 1, alpha=0.25)+
-  #scale_fill_viridis_c(option = "magma", trans="reverse")+
-  scale_color_distiller(breaks=c(0.5, seq(10, 50, 10)),
-                        palette="YlOrRd", direction=1,
-                        limits = c(min(plots_captures$ncap_rel), max(plots_captures$ncap_rel)))+
-  scale_fill_distiller(breaks=c(0.5, seq(10, 50, 10)),
-                       palette="YlOrRd", direction=1,
-                       limits = c(min(plots_captures$ncap_rel), max(plots_captures$ncap_rel)))+
-  #scale_fill_continuous(trans = 'reverse', type = "viridis", name="number of connections")+
-  theme(axis.text=element_text(size=6),
-        axis.title=element_text(size=6),
-        legend.text = element_text(size = 9),
-        legend.title = element_text(size = 10),
-        legend.position = "bottom",
-        legend.direction = "horizontal",
-        legend.position.inside = c(0.16, 0.1),
-        legend.key.height = unit(0.2, "cm"),
-        legend.key.width = unit(0.45, "cm"),
-        legend.background = element_rect(fill=NA),
-        legend.spacing.x = unit(0.15, 'cm'))+
-  annotation_scale(line_width = 1, style="ticks", location="br",
-                   pad_x = unit(0.33, "cm"),
-                   pad_y = unit(0.33, "cm"),)+
-  annotation_north_arrow(height=unit(0.65, "cm"),
-                         width=unit(0.4, "cm"),
-                         location="br",
-                         pad_x = unit(0.33, "cm"),
-                         pad_y = unit(0.9, "cm"),
-                         style=north_arrow_orienteering(
-                           line_width = 1,
-                           fill = c("black", "black"),
-                           text_size = 8,
-                           text_angle = 0
-                         ))+
-  #ylab("Latitude") + xlab("Longitude") +
-  theme(legend.position = "none")+ 
-  scale_y_continuous(breaks = c(50.956, 50.96, 50.964, 50.968), expand=c(0,0))+
-  scale_x_continuous(breaks = c(10.634, 10.638,10.642, 10.646), expand=c(0,0))+
-  labs(#title = "Kriegberg",
-    #caption = " "
-  )
-
-map_krb_capt
-
-
-##### network maps #####
 
 falter_network1 <- falter_recapt_cent %>%  
   st_intersection(plots %>% select(plot_id)) %>%
@@ -292,14 +184,125 @@ falter_cons_hainich <- falter_cons_buf %>% st_intersection(ug[ug$Name == "Hainic
 falter_cons_jon <- falter_cons_buf %>% st_intersection(ug[ug$Name == "Jonastal",])
 falter_cons_krb <- falter_cons_buf %>% st_intersection(ug[ug$Name == "Kriegberg",])
 
-falter_lines_hainich <- falter_lines %>% st_intersection(ug[ug$Name == "Hainich",])
-falter_lines_krb <- falter_lines %>% st_intersection(ug[ug$Name == "Kriegberg",])
-falter_lines_jon <- falter_lines %>% st_intersection(ug[ug$Name == "Jonastal",])
-
 falter_plots_hainich <- plots2 %>% filter(cluster < 6 & !is.na(n))
 falter_plots_krb <- plots2 %>% filter(cluster == 6 & !is.na(n))
 falter_plots_jon <- plots2 %>% filter(cluster == 7 & !is.na(n))
 
+
+
+##### captures maps #####
+
+plots_captures_buf <- st_buffer(plots_captures, dist=0.5)
+
+map_nlp_capt <- ggplot() + 
+  geom_spatraster_rgb(data = ortho_nlp, alpha=0.8) +
+  geom_sf(data=nlp_außen %>% st_crop(st_bbox(mybox_nlp)), 
+          linewidth=1, lty=1, col="black", fill=NA)+
+  geom_sf(data=nlp_schutz %>% st_crop(st_bbox(mybox_nlp)), 
+          linewidth=0.7, lty=2, col="black", , fill=NA)+
+  geom_sf(data=plots_captures_buf %>% filter(cluster < 6 & ncap > 0), 
+          aes(col=ncap_rel, fill=ncap_rel), linewidth=0.6, size=1, alpha=0.4)+
+  geom_sf(data=plots_captures_buf %>% filter(cluster < 6 & ncap == 0), 
+          linewidth=0.6, fill="grey75", alpha=0.4)+
+  theme_bw()+
+  #scale_fill_viridis_c(option = "magma", trans="reverse")+
+  scale_color_distiller(breaks=c(0.5, seq(10, 50, 10)),
+                        palette="YlOrRd", direction=1,
+                        limits = c(min(plots_captures$ncap_rel), max(plots_captures$ncap_rel)))+
+  scale_fill_distiller(breaks=c(0.5, seq(10, 50, 10)),
+                       palette="YlOrRd", direction=1,
+                       limits = c(min(plots_captures$ncap_rel), max(plots_captures$ncap_rel)))+
+  geom_sf(data=falter_complete %>% filter(cluster < 6), fill="black", size= 0.1, alpha=0.25)+
+  theme(axis.text=element_text(size=6),
+        axis.title=element_text(size=6),
+        legend.text = element_text(size = 9),
+        legend.title = element_text(size = 10),
+        legend.position = "bottom",
+        # legend.direction = "horizontal",
+        legend.position.inside = c(1.14, 0.12),
+        legend.key.height = unit(0.2, "cm"),
+        legend.key.width = unit(1, "cm"),
+        #legend.background = element_blank(),
+        legend.background = element_rect(fill="white", colour ="white"),
+        legend.spacing.x = unit(0.15, 'cm'))+
+  #ylab("Latitude") + xlab("Longitude") +
+  annotation_scale(line_width = 1, style="ticks", location="bl",
+                   pad_x = unit(0.75, "cm"),
+                   pad_y = unit(0.2, "cm"),)+
+  annotation_north_arrow(height=unit(0.65, "cm"),
+                         width=unit(0.4, "cm"),
+                         location="bl",
+                         pad_x = unit(0.16, "cm"),
+                         pad_y = unit(0.2, "cm"),
+                         style=north_arrow_orienteering(
+                           line_width = 1,
+                           fill = c("black", "black"),
+                           text_size = 8,
+                           text_angle = 0
+                         ))+
+  labs(#title = "Hainich", 
+    #caption = "Orthophoto 2020: (c) GDI-TH",
+    col="captured individuals \n per ha and hour")+
+  scale_y_continuous(expand = c(0, 0))+
+  scale_x_continuous(expand = c(0, 0))+
+  guides(fill = FALSE)
+
+map_nlp_capt
+
+map_krb_capt <- ggplot() + 
+  geom_spatraster_rgb(data = ortho_krb, alpha=0.8) +
+  geom_sf(data=plots_captures_buf %>% filter(cluster == 6 & ncap > 0), 
+          aes(col=ncap_rel, fill=ncap_rel), linewidth=0.6, size=1, alpha=0.4)+
+  geom_sf(data=plots_captures_buf %>% filter(cluster == 6 & ncap == 0), 
+          linewidth=0.6, fill="grey75", alpha=0.4)+
+  theme_bw()+
+  geom_sf(data=falter_complete %>% filter(cluster == 6), 
+          fill="black", size= 1, alpha=0.25)+
+  #scale_fill_viridis_c(option = "magma", trans="reverse")+
+  scale_color_distiller(breaks=c(0.5, seq(10, 50, 10)),
+                        palette="YlOrRd", direction=1,
+                        limits = c(min(plots_captures$ncap_rel), max(plots_captures$ncap_rel)))+
+  scale_fill_distiller(breaks=c(0.5, seq(10, 50, 10)),
+                       palette="YlOrRd", direction=1,
+                       limits = c(min(plots_captures$ncap_rel), max(plots_captures$ncap_rel)))+
+  #scale_fill_continuous(trans = 'reverse', type = "viridis", name="number of connections")+
+  theme(axis.text=element_text(size=6),
+        axis.title=element_text(size=6),
+        legend.text = element_text(size = 9),
+        legend.title = element_text(size = 10),
+        legend.position = "bottom",
+        legend.direction = "horizontal",
+        legend.position.inside = c(0.16, 0.1),
+        legend.key.height = unit(0.2, "cm"),
+        legend.key.width = unit(0.45, "cm"),
+        legend.background = element_rect(fill=NA),
+        legend.spacing.x = unit(0.15, 'cm'))+
+  annotation_scale(line_width = 1, style="ticks", location="br",
+                   pad_x = unit(0.33, "cm"),
+                   pad_y = unit(0.33, "cm"),)+
+  annotation_north_arrow(height=unit(0.65, "cm"),
+                         width=unit(0.4, "cm"),
+                         location="br",
+                         pad_x = unit(0.33, "cm"),
+                         pad_y = unit(0.9, "cm"),
+                         style=north_arrow_orienteering(
+                           line_width = 1,
+                           fill = c("black", "black"),
+                           text_size = 8,
+                           text_angle = 0
+                         ))+
+  #ylab("Latitude") + xlab("Longitude") +
+  theme(legend.position = "none")+ 
+  scale_y_continuous(breaks = c(50.956, 50.96, 50.964, 50.968), expand=c(0,0))+
+  scale_x_continuous(breaks = c(10.634, 10.638,10.642, 10.646), expand=c(0,0))+
+  labs(#title = "Kriegberg",
+    #caption = " "
+  )
+
+map_krb_capt
+
+
+##### network maps #####
 
 
 ### recapture map hainich ###
@@ -315,7 +318,6 @@ map_nlp <- ggplot() +
   geom_sf(data=falter_cons_hainich %>% st_transform(crs=4326) , 
           aes(fill=n), col=NA, alpha=1, linewidth=0)+
   geom_sf(data=falter_plots_hainich, aes(fill=n)) + 
-  #geom_sf(data=falter_lines_hainich, linewidth=0.1)+
   theme_bw()+
   scale_fill_viridis_c(trans = 'reverse', limits = c(6, 1))+
   #scale_fill_fermenter(palette="viridis", n.breaks=6, limits=c(1,6))+
@@ -368,7 +370,6 @@ map_krb <- ggplot() +
   geom_sf(data=falter_cons_krb %>% st_transform(crs=4326) , 
           aes(fill=n), col=NA, alpha=1, linewidth=0)+
   geom_sf(data=falter_plots_krb, aes(fill=n)) + 
-  #geom_sf(data=falter_lines_krb, linewidth=0.1)+
   theme_bw()+
   scale_fill_viridis_c(trans = 'reverse', limits = c(6, 1))+
   #scale_fill_continuous(trans = 'reverse', type = "viridis", name="number of connections")+
@@ -421,91 +422,3 @@ ggarrange(
 dev.off()
 
 
-
-
-####### overview map ######
-
-map <- ggplot() + 
-  annotation_map_tile(type="cartolight", zoom=10)+
-  geom_sf(data=ug %>% st_transform(crs=4326), fill="grey85",
-          linewidth=0.5, alpha=0.1)+
-  geom_sf(data=plot_centroids %>% filter(!plot_id %in% c(107:110)), 
-          fill="black", size=0.25, shape=15) + theme_bw()+
-  annotation_scale(line_width = 1, style="ticks", location="bl",
-                   pad_x = unit(1.2, "cm"),
-                   pad_y = unit(.35, "cm"),)+
-  annotation_north_arrow(height=unit(0.65, "cm"),
-                         width=unit(0.4, "cm"),
-                         location="bl",
-                         pad_x = unit(0.4, "cm"),
-                         pad_y = unit(.35, "cm"),
-                         style=north_arrow_orienteering(
-                           line_width = 1,
-                           fill = c("black", "black"),
-                           text_size = 8,
-                           text_angle = 0
-                         ))+
-  theme(axis.text=element_text(size=6),
-        axis.title=element_text(size=6))+
-  annotate(geom="text", label="Scatter plot",
-           color="red")
-
-
-map 
-
-head(ug)
-
-map <- ggplot() + 
-  annotation_map_tile(type="osm", zoom=12, zoomin=-1)+
-  geom_sf(data=ug %>% st_transform(crs=4326) %>% filter(Name == "Hainich"), fill="grey85",
-          linewidth=1, alpha=0)+
-  geom_sf(data=plots %>% filter(!plot_id %in% c(107:110) & cluster < 6),
-          fill="black", size=0.25) + theme_bw()+
-  annotation_scale(line_width = 1, style="ticks", location="br",
-                   pad_x = unit(1.2, "cm"),
-                   pad_y = unit(.35, "cm"),)+
-  annotation_north_arrow(height=unit(0.65, "cm"),
-                         width=unit(0.4, "cm"),
-                         location="br",
-                         pad_x = unit(0.4, "cm"),
-                         pad_y = unit(.35, "cm"),
-                         style=north_arrow_orienteering(
-                           line_width = 1,
-                           fill = c("black", "black"),
-                           text_size = 8,
-                           text_angle = 0
-                         ))+
-  labs(#title = "Hainich", 
-    caption = "(c) OpenStreetMap Contributors")+
-  theme(axis.text=element_blank(),
-        axis.title=element_blank(),
-        axis.ticks=element_blank())
-#ylab("Latitude") + xlab("Longitude") +
-
-
-map 
-
-map <- ggplot() + 
-  annotation_map_tile(type="osm", zoom=15, zoomin=-1)+
-  geom_sf(data=ug %>% st_transform(crs=4326) %>% filter(Name == "Kriegberg"), fill="grey85",
-          linewidth=1, alpha=0)+
-  geom_sf(data=plots %>% filter(!plot_id %in% c(107:110) & cluster == 6),
-          fill="black", size=0.25, shape=15) + theme_bw()+
-  annotation_scale(line_width = 1, style="ticks", location="br",
-                   pad_x = unit(1.2, "cm"),
-                   pad_y = unit(.35, "cm"),)+
-  annotation_north_arrow(height=unit(0.65, "cm"),
-                         width=unit(0.4, "cm"),
-                         location="br",
-                         pad_x = unit(0.4, "cm"),
-                         pad_y = unit(.35, "cm"),
-                         style=north_arrow_orienteering(
-                           line_width = 1,
-                           fill = c("black", "black"),
-                           text_size = 8,
-                           text_angle = 0
-                         ))#+
-#ylab("Latitude") + xlab("Longitude") +
-#geom_text(aes(x=10.4, y=51), "test")
-
-map 
