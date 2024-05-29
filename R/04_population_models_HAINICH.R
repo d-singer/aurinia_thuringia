@@ -67,6 +67,8 @@ capt.hist <- capt.hist %>% ungroup %>%
 
 capt.hist<-spread(capt.hist,event,detect,fill = 0)
 
+capt.hist.gof <- capt.hist 
+
 capt.hist<-group_by(capt.hist,id)
 
 capt.hist<-unite(capt.hist,"ch",3:14,sep = "")
@@ -165,3 +167,22 @@ summary <- summary_table %>% left_join(model.table[5:length(model.table)], by="m
 
 fwrite(summary,"data/population_models/models_summary_hainich.csv")
 writexl::write_xlsx(summary,"data/population_models/models_summary_hainich.xlsx")
+
+# GOF test
+
+library(R2ucare)
+library(epanetReader)
+
+hist <- capt.hist.gof[3:14] %>% as.matrix()
+capt.hist.gof$freq <- 1
+freq <- capt.hist.gof$freq
+
+overall_CJS(X=hist,freq=freq,rounding = 3) 
+
+test2ct(X=hist,freq=freq,rounding = 3)
+test2cl(X=hist,freq=freq,rounding = 3)
+test3sr(X=hist,freq=freq,rounding = 3)
+test3sm(X=hist,freq=freq,rounding = 3)
+
+
+
