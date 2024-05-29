@@ -117,14 +117,14 @@ N.dot = list(formula =  ~ 1)
 models <- create.model.list("POPAN")
 
 # run all models
-models_output <- mark.wrapper.parallel(models, data = Popt.pr, ddl=Popt.ddl)
+models_output <- mark.wrapper.parallel(models, data = Popt.pr, ddl=Popt.ddl, delete=T)
 
 # extract model table
 model.table <- models_output$model.table
 
 # save model output as xlsx
-fwrite(model.table, "data/models_output_hainich.csv")
-writexl::write_xlsx(model.table,"data/models_output_hainich.xlsx")
+fwrite(model.table, "data/population_models/models_output_hainich.csv")
+writexl::write_xlsx(model.table,"data/population_models/models_output_hainich.xlsx")
 
 # empty data frame to be filled in loop
 all <- data.frame()
@@ -159,8 +159,9 @@ summary_table <- all %>% group_by(model) %>% pivot_wider(id_cols=c("model"),
                                                          names_from="parameter",
                                                          values_from="estimate_CI") 
 
-summary <- summary_table %>% left_join(model.table[5:length(model.table)], by="model") %>%
-  arrange(model_rank)
+summary <- summary_table %>% left_join(model.table[5:length(model.table)], by="model") 
 
-fwrite(summary,"data/models_summary_hainich.csv")
-writexl::write_xlsx(summary,"data/models_summary_hainich.xlsx")
+
+
+fwrite(summary,"data/population_models/models_summary_hainich.csv")
+writexl::write_xlsx(summary,"data/population_models/models_summary_hainich.xlsx")

@@ -1,11 +1,11 @@
 source("R/setup.R")
 
-falter_complete <- st_read("data/falter_complete.shp")
+falter_complete <- st_read("data/aurinia/aurinia_observations_complete.shp")
 
 falter_complete <- falter_complete %>% filter(site == "krb")
 
 # variable: number of neighbour plots
-plots <- st_read("data/ug/Plots.shp") %>% st_transform(crs=25832) %>%
+plots <- st_read("data/study_sites/sampling_plots.shp") %>% st_transform(crs=25832) %>%
   rename(plot_id = id, cluster = Cluster)%>%
   mutate(plot_id = as.character(plot_id))
 
@@ -19,44 +19,11 @@ plot_buf2 <- st_intersection(plot_buf , plot_centroids) %>%
   summarise(neighbourplots = uniqueN(plot_id.1))
 
 # variable: weather data
-start = 9 # Startzeit Wetterdaten
-end = 17 # Endzeit Wetterdaten
 
+weather <- fread("data/clim/weather_data_DWD_Eisenach.csv")
+weather <- weather[1:11,]
 
-sun <- fread("data/clim/produkt_zehn_min_sd_20200101_20231231_07368.txt") %>% 
-  mutate(timestamp = ymd_hm(MESS_DATUM),
-         date = date(timestamp),
-         hour = hour(timestamp)) %>% 
-  filter(date %in% falter_complete$timestamp &
-           hour %in% seq(start,end,1)) %>%
-  group_by(date) %>% 
-  summarise(sundur = sum(SD_10)) 
-
-temp <- fread("data/clim/produkt_zehn_min_tu_20200101_20231231_07368.txt")%>% 
-  mutate(timestamp = ymd_hm(MESS_DATUM),
-         date = date(timestamp),
-         hour = hour(timestamp)) %>% 
-  filter(date %in% falter_complete$timestamp &
-           hour %in% seq(start,end,1)) %>%
-  group_by(date) %>% 
-  summarise(temp = mean(TT_10))
-
-
-wind <- fread("data/clim/produkt_zehn_min_ff_20200101_20231231_07368.txt")%>% 
-  mutate(timestamp = ymd_hm(MESS_DATUM),
-         date = date(timestamp),
-         hour = hour(timestamp)) %>% 
-  filter(date %in% falter_complete$timestamp &
-           hour %in% seq(start,end,1)) %>%
-  group_by(date) %>% 
-  summarise(wind = (mean(FF_10)*60*60)/1000)
-
-weather <- cbind(sun, temp[,2], wind[,2])
-
-fwrite(weather, "data/weather_data_DWD_Eisenach.csv")
-
-
-##### HAINICH #####
+##### Kriegberg #####
 #capture history
 capt.hist<-falter_complete %>% st_drop_geometry() %>% 
   mutate(site = substr(obs_id, start=1, stop=3))
@@ -107,20 +74,11 @@ p.sunwind=list(formula= ~sundur+wind)
 p.tempsun=list(formula= ~temp+sundur)
 p.tempwindsun=list(formula= ~temp+wind+sundur)
 
-# p.tempXwind=list(formula= ~temp*wind)
-# p.sunXwind=list(formula= ~sundur*wind)
-# p.tempXsun=list(formula= ~temp*sundur)
-# p.tempXwindXsun=list(formula= ~temp*wind*sundur)
-
-
 Phi.time = list(formula =  ~ time)
-#Phi.timesq = list(formula =  ~ time^2)
 Phi.dot = list(formula =  ~ 1)
-#p.timesq = list(formula =  ~ time^2)
 p.dot = list(formula =  ~ 1)
 p.time = list(formula =  ~ time)
 pent.time = list(formula =  ~ time)
-#pent.timesq = list(formula =  ~ time^2)
 pent.dot = list(formula =  ~ 1)
 N.dot = list(formula =  ~ 1)
 
@@ -128,19 +86,14 @@ N.dot = list(formula =  ~ 1)
 models <- create.model.list("POPAN")
 
 # run all models
-models_output <- mark.wrapper.parallel(models, data = Popt.pr, ddl=Popt.ddl)
-
+models_output <- mark.wrapper.parallel(models, data = Popt.pr, ddl=Popt.ddl, delete=T)
 
 # extract model table
 model.table <- models_output$model.table
 
-# calcutate model ranks
-model.table <- model.table %>% mutate(AICc_rank = dense_rank(AICc),
-                                      npar_rank = dense_rank(npar),
-                                      model_rank = dense_rank(AICc_rank + npar_rank/2))
-
 # save model output as xlsx
-writexl::write_xlsx(model.table,"data/models_output_kriegberg.xlsx")
+fwrite(model.table, "data/population_models/models_output_kriegberg.csv")
+writexl::write_xlsx(model.table,"data/population_models/models_output_kriegberg.xlsx")
 
 # empty data frame to be filled in loop
 all <- data.frame()
@@ -175,16 +128,9 @@ summary_table <- all %>% group_by(model) %>% pivot_wider(id_cols=c("model"),
                                                          names_from="parameter",
                                                          values_from="estimate_CI") 
 
-summary <- summary_table %>% left_join(model.table[5:length(model.table)], by="model") %>%
-  arrange(model_rank)
+summary <- summary_table %>% left_join(model.table[5:length(model.table)], by="model")
 
 
+fwrite(summary,"data/population_models/models_summary_kriegberg.csv")
+writexl::write_xlsx(summary,"data/population_models/models_summary_kriegberg.xlsx")
 
-writexl::write_xlsx(summary,"data/models_summary_kriegberg.xlsx")
-
-N <- all %>% filter(parameter == "N")
-
-# ca
-N$estimate[1]/uniqueN(falter_complete$plot_id)
-N$lcl[1]/uniqueN(falter_complete$plot_id)
-N$ucl[1]/uniqueN(falter_complete$plot_id)
