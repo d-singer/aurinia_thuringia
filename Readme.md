@@ -6,3 +6,27 @@ Please cite any use of this work:
 
 XXX
 
+
+# R scripts
+
+The provided R-code can be used to reproduce the results of the paper, however it can also be adapted for use with own data. 
+
+## 01_prepare_data_and_basic_results.R
+
+This script prepares the data for all following analyses and provides a basal descriptive analyses of the raw capture data (Figure 1). 
+
+## 02_recapture_distances.R
+
+This script calculates the recapture flight distances and analyses differences in flight distances between males and females (Figure 2).
+
+## 03_maps_aurinia.R
+
+This script primarily prepares the data for the visualisation of capture densities and recapture connections in ggplot-maps (Figure 3). 
+
+## 04_population_models_HAINICH.R
+
+This script models populations size based on the recaptures data for the Hainich study site, including weather parameters (Table 1).  
+
+## 05_population_models_KRIEGBERG.R
+
+This script models populations size based on the recaptures data for the Kriegberg study site, including weather parameters (Table 1). 
