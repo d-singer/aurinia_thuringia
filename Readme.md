@@ -22,11 +22,14 @@ This script calculates the recapture flight distances and analyses differences i
 ## 03_maps_aurinia.R
 
 This script prepares the data for the following visualisation of capture densities and recapture connections in ggplot-maps for Hainich and Kriegberg (Figure 3). 
+Due to storage capacity limitations of github, the orthophotos are not included. To fully reproduce the maps, orthophotos need to be manually downloaded from: https://geoportal.thueringen.de/gdi-th/download-offene-geodaten/download-luftbilder-und-orthophotos
+
 
 ## 04_population_models_HAINICH.R
 
-This script models populations sizes based on the recapture data for the Hainich study site, including weather parameters (Table 1).  
+This script models populations sizes based on the recapture data for the Hainich study site, including weather parameters (Table 1). 
 
 ## 05_population_models_KRIEGBERG.R
 
 This script models populations size based on the recapture data for the Kriegberg study site, including weather parameters (Table 1). 
+
