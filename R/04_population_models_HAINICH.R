@@ -48,7 +48,7 @@ wind <- fread("data/clim/produkt_zehn_min_ff_20200101_20231231_07368.txt")%>%
   filter(date %in% falter_complete$timestamp &
            hour %in% seq(start,end,1)) %>%
   group_by(date) %>% 
-  summarise(wind = (mean(FF_10)*60*60)/1000)
+  summarise(wind = ((mean(FF_10)*60*60)/1000))
 
 weather <- cbind(sun, temp[,2], wind[,2])
 
@@ -72,6 +72,7 @@ capt.hist.gof <- capt.hist
 capt.hist<-group_by(capt.hist,id)
 
 capt.hist<-unite(capt.hist,"ch",3:14,sep = "")
+
 
 
 #capture history tabelle umformatieren: ID weg, Spalte "frequency" erstellen
@@ -131,7 +132,7 @@ writexl::write_xlsx(model.table,"data/population_models/models_output_hainich.xl
 # empty data frame to be filled in loop
 all <- data.frame()
 
-for(i in 1:nrow(models))
+for(i in 1:nrow(model.table))
 {
 mymod <- models_output[[i]]
 
@@ -168,21 +169,20 @@ summary <- summary_table %>% left_join(model.table[5:length(model.table)], by="m
 fwrite(summary,"data/population_models/models_summary_hainich.csv")
 writexl::write_xlsx(summary,"data/population_models/models_summary_hainich.xlsx")
 
+
+N <- all %>% filter(parameter == "N")
+
+N$estimate[1]/uniqueN(falter_complete$plot_id)
+N$lcl[1]/uniqueN(falter_complete$plot_id)
+N$ucl[1]/uniqueN(falter_complete$plot_id)
+
+
 # GOF test
 
 library(R2ucare)
-library(epanetReader)
 
 hist <- capt.hist.gof[3:14] %>% as.matrix()
 capt.hist.gof$freq <- 1
 freq <- capt.hist.gof$freq
 
 overall_CJS(X=hist,freq=freq,rounding = 3) 
-
-test2ct(X=hist,freq=freq,rounding = 3)
-test2cl(X=hist,freq=freq,rounding = 3)
-test3sr(X=hist,freq=freq,rounding = 3)
-test3sm(X=hist,freq=freq,rounding = 3)
-
-
-

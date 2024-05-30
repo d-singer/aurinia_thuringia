@@ -13,7 +13,7 @@ falter_recapt <- falter_recapt %>% st_drop_geometry %>%
   merge(plot_centroids %>% select(plot_id, geometry), by="plot_id") %>% 
   st_as_sf() %>% arrange(id, timestamp)
 
-st_write(falter_recapt, "data/aurinia/aurinia_observations_recaptures.shp")
+st_write(falter_recapt, "data/aurinia/aurinia_observations_recaptures.shp", append=F)
 
 ##### calculate flight lines and distances #####
 
@@ -232,3 +232,24 @@ ggarrange(violin, ggplot() + theme_void(), hist, align = c("hv"), nrow=3,
           labels=c("A", "", "B"))
 dev.off()
 
+
+
+#### residence time
+uniqueN(falter_recapt$id)
+
+falter_lifetime <- falter_recapt %>% st_drop_geometry() %>% 
+  group_by(sex, id) %>% summarise(first = min(date), last = max(date),
+                             lifetime = (last-first) %>% as.numeric)
+  
+mean(falter_lifetime$lifetime)
+sd(falter_lifetime$lifetime)
+
+mean(falter_lifetime$lifetime[falter_lifetime$sex == "female"])
+sd(falter_lifetime$lifetime[falter_lifetime$sex == "female"])
+
+mean(falter_lifetime$lifetime[falter_lifetime$sex == "male"])
+sd(falter_lifetime$lifetime[falter_lifetime$sex == "male"])
+
+test <- falter_lifetime[falter_lifetime$sex != "unknown",]
+
+wilcox.test(test$lifetime ~ test$sex)

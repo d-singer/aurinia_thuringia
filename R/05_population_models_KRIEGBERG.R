@@ -136,20 +136,21 @@ summary <- summary_table %>% left_join(model.table[5:length(model.table)], by="m
 fwrite(summary,"data/population_models/models_summary_kriegberg.csv")
 writexl::write_xlsx(summary,"data/population_models/models_summary_kriegberg.xlsx")
 
+
+N <- all %>% filter(parameter == "N")
+
+N$estimate[1]/uniqueN(falter_complete$plot_id)
+N$lcl[1]/uniqueN(falter_complete$plot_id)
+N$ucl[1]/uniqueN(falter_complete$plot_id)
+
+
+
 # GOF test
 
 library(R2ucare)
-library(epanetReader)
 
 hist <- capt.hist.gof[3:13] %>% as.matrix()
 capt.hist.gof$freq <- 1
 freq <- capt.hist.gof$freq
 
 overall_CJS(X=hist,freq=freq,rounding = 3) 
-
-test2ct(X=hist,freq=freq,rounding = 3)
-test2cl(X=hist,freq=freq,rounding = 3)
-test3sr(X=hist,freq=freq,rounding = 3)
-test3sm(X=hist,freq=freq,rounding = 3)
-
-
