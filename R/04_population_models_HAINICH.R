@@ -83,28 +83,24 @@ Popt$frequency<-nchar(1)
 
 dates <- sort(unique(falter_complete$date))
 dates
-timeints <- difftime(dates[2:length(dates)],dates[1:length(dates)-1]) %>% as.character()
+timeints <- difftime(dates[2:length(dates)],dates[1:length(dates)-1]) %>% as.numeric()
 timeints
 
-#Process data (entsprechend dem Link von Johannes (Lachs))
-# Idee falls Pausentage berücksichtigt: Popt.pr <- process.data(Popt, begin.time = 4, model = "POPAN",time.intervals = c(1, 4, 1, 4, 1, 3, 1, 2, 1, 5, 1))
+#Process data
 Popt.pr <- process.data(Popt, begin.time = 1, model = "POPAN", 
-                        time.intervals = timeints)
+                        time.intervals = timeints %>% as.numeric())
 Popt.ddl=make.design.data(Popt.pr)
 Popt.ddl
-
-# dataframe Temperatur erstellen (time sind synonymwerte, da 1,2,3,4...12 wegen des time intervals nicht ging)
 
 df=data.frame(time=cumsum(c(1, timeints)),
               temp=weather$temp[weather$date %in% dates],
               sundur = weather$sundur[weather$date %in% dates],
               wind = weather$wind[weather$date %in% dates])
-summary(Popt.ddl$p)
+
+
 Popt.ddl$p=merge_design.covariates(Popt.ddl$p,df)
-summary(Popt.ddl$p)
-Popt.ddl$p$time
 
-
+str(Popt.ddl$p)
 
 # Model parameters
 p.sun=list(formula= ~sundur)
@@ -115,13 +111,16 @@ p.sunwind=list(formula= ~sundur+wind)
 p.tempsun=list(formula= ~temp+sundur)
 p.tempwindsun=list(formula= ~temp+wind+sundur)
 
-Phi.time = list(formula =  ~ time)
 Phi.dot = list(formula =  ~ 1)
-p.dot = list(formula =  ~ 1)
-p.time = list(formula =  ~ time)
-pent.time = list(formula =  ~ time)
-pent.dot = list(formula =  ~ 1)
-N.dot = list(formula =  ~ 1)
+Phi.time = list(formula = ~ Time)
+Phi.timesq = list(formula =  ~ Time + I(Time^2))
+p.dot = list(formula = ~ 1)
+p.time = list(formula = ~ Time)
+p.timesq = list(formula = ~ Time + I(Time^2))
+pent.dot = list(formula = ~ 1)
+pent.time = list(formula = ~ Time)
+pent.timesq = list(formula = ~ Time + I(Time^2))
+N.dot = list(formula = ~ 1)
 
 # create all combinations of model parameters
 models <- create.model.list("POPAN")
@@ -169,19 +168,18 @@ summary_table <- all %>% group_by(model) %>% pivot_wider(id_cols=c("model"),
                                                          names_from="parameter",
                                                          values_from="estimate_CI") 
 
-summary <- summary_table %>% left_join(model.table[5:length(model.table)], by="model") 
+summary <- summary_table %>% left_join(model.table[5:length(model.table)], by="model") %>% arrange(AICc)
 
-
-
-fwrite(summary,"data/population_models/models_summary_hainich.csv")
-writexl::write_xlsx(summary,"data/population_models/models_summary_hainich.xlsx")
-
+summary$weightcum <- cumsum(summary$weight)
 
 N <- all %>% filter(parameter == "N")
 
-N$estimate[1]/uniqueN(falter_complete$plot_id)
-N$lcl[1]/uniqueN(falter_complete$plot_id)
-N$ucl[1]/uniqueN(falter_complete$plot_id)
+# Population density
+summary$ind_per_ha <- paste0(round(N$estimate/uniqueN(falter_complete$plot_id), digits=0), " [", round(N$lcl/uniqueN(falter_complete$plot_id), 0), "-", round(N$ucl/uniqueN(falter_complete$plot_id), 0), "]")
+
+fwrite(summary %>% select(!weightcum),"data/population_models/models_summary_hainich.csv")
+writexl::write_xlsx(summary %>% select(!weightcum),"data/population_models/models_summary_hainich.xlsx")
+writexl::write_xlsx(summary %>% filter(weightcum <= 0.95) %>% select(!weightcum),"data/population_models/models_summary_hainich_weight95.xlsx")
 
 
 # GOF test
