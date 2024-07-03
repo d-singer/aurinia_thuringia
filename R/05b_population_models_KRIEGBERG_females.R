@@ -2,6 +2,8 @@ source("R/setup.R")
 
 falter_complete <- st_read("data/aurinia/aurinia_observations_complete.shp")
 
+plots <- falter_complete %>% filter(site == "krb")
+
 falter_complete <- falter_complete %>% filter(site == "krb" & sex == "female")
 
 # variable: number of neighbour plots
@@ -142,8 +144,9 @@ summary$weightcum <- cumsum(summary$weight)
 # Population density
 N <- all %>% filter(parameter == "N")
 
-summary$ind_per_ha <- paste0(round(N$estimate/uniqueN(falter_complete$plot_id), digits=0), " [", round(N$lcl/uniqueN(falter_complete$plot_id), 0), "-", round(N$ucl/uniqueN(falter_complete$plot_id), 0), "]")
-
+summary$ind_per_ha <- paste0(round(N$estimate/uniqueN(plots$plot_id), digits=0), " [", 
+                             round(N$lcl/uniqueN(plots$plot_id), 0), "-", 
+                             round(N$ucl/uniqueN(plots$plot_id), 0), "]")
 
 fwrite(summary %>% select(!weightcum),"data/population_models/models_summary_kriegberg_female.csv")
 writexl::write_xlsx(summary %>% select(!weightcum),"data/population_models/models_summary_kriegberg_female.xlsx")

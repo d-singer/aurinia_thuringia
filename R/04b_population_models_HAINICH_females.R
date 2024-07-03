@@ -175,7 +175,9 @@ summary$weightcum <- cumsum(summary$weight)
 # Population density
 N <- all %>% filter(parameter == "N")
 
-summary$ind_per_ha <- paste0(round(N$estimate/uniqueN(falter_complete$plot_id), digits=0), " [", round(N$lcl/uniqueN(falter_complete$plot_id), 0), "-", round(N$ucl/uniqueN(falter_complete$plot_id), 0), "]")
+summary$ind_per_ha <- paste0(round(N$estimate/uniqueN(plots$plot_id), digits=0), " [", 
+                             round(N$lcl/uniqueN(plots$plot_id), 0), "-", 
+                             round(N$ucl/uniqueN(plots$plot_id), 0), "]")
 
 
 fwrite(summary,"data/population_models/models_summary_hainich_female.csv")
