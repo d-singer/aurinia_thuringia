@@ -188,7 +188,7 @@ N$ucl[1]/uniqueN(falter_complete$plot_id)
 
 library(R2ucare)
 
-hist <- capt.hist.gof[3:14] %>% as.matrix()
+hist <- capt.hist.gof[3:length(capt.hist.gof)] %>% as.matrix()
 capt.hist.gof$freq <- 1
 freq <- capt.hist.gof$freq
 
