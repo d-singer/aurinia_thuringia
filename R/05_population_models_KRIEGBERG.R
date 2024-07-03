@@ -47,24 +47,29 @@ Popt<-capt.hist
 Popt<-Popt[-1]
 Popt$frequency<-nchar(1)
 
+dates <- sort(unique(falter_complete$date))
+dates
+timeints <- difftime(dates[2:length(dates)],dates[1:length(dates)-1]) %>% as.character()
+timeints
 
 #Process data (entsprechend dem Link von Johannes (Lachs))
 # Idee falls Pausentage berücksichtigt: Popt.pr <- process.data(Popt, begin.time = 4, model = "POPAN",time.intervals = c(1, 4, 1, 4, 1, 3, 1, 2, 1, 5, 1))
 Popt.pr <- process.data(Popt, begin.time = 1, model = "POPAN", 
-                        time.intervals = c(1, 4, 1, 4, 1, 3, 1,2,1,5))
+                        time.intervals = timeints)
 Popt.ddl=make.design.data(Popt.pr)
 Popt.ddl
 
 # dataframe Temperatur erstellen (time sind synonymwerte, da 1,2,3,4...12 wegen des time intervals nicht ging)
 
-df=data.frame(time=c(1, 2, 6, 7, 11, 12, 15, 16, 18, 19, 24),
-              temp=weather$temp,
-              sundur = weather$sundur,
-              wind = weather$wind)
+df=data.frame(time=cumsum(c(1, timeints)),
+              temp=weather$temp[weather$date %in% dates],
+              sundur = weather$sundur[weather$date %in% dates],
+              wind = weather$wind[weather$date %in% dates])
 summary(Popt.ddl$p)
 Popt.ddl$p=merge_design.covariates(Popt.ddl$p,df)
 summary(Popt.ddl$p)
 Popt.ddl$p$time
+
 
 
 # Model parameters
