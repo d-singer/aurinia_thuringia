@@ -11,7 +11,8 @@ nlp_schutz <- st_read("data/study_sites/nlp_shapes/hainich_zones.shp") %>% st_tr
 # sampling plots
 plots <- st_read("data/study_sites/sampling_plots.shp") %>% st_transform(crs=25832) %>%
   rename(plot_id = id, cluster = Cluster)%>%
-  mutate(plot_id = as.character(plot_id))
+  mutate(plot_id = as.character(plot_id)) %>%
+  filter(!plot_id %in% c(107:110))
 
 # calculate centroids of sampling plots
 plot_centroids <- st_centroid(plots)
@@ -30,8 +31,13 @@ ortho_nlp <- crop(ortho_nlp, mybox_nlp)
 
 # crop orthophoto kriegberg
 ortho_krb <- terra::rast("data/orthophotos/dop_kriegberg_2020.tif") 
-mybox_krb <- st_buffer(plots %>% filter(cluster == 6), dist=300) %>% st_transform(crs=25832)
+mybox_krb <- st_buffer(plots %>% filter(cluster == 6), dist=250) %>% st_transform(crs=25832)
 ortho_krb <- crop(ortho_krb, mybox_krb)
+
+# crop orthophoto kriegberg
+ortho_jon <- terra::rast("data/orthophotos/dop_jonastal_2020.tif") 
+mybox_jon <- st_buffer(plots %>% filter(cluster == 7), dist=250) %>% st_transform(crs=25832)
+ortho_jon <- crop(ortho_jon, mybox_jon)
 
 
 
@@ -240,9 +246,8 @@ map_nlp_capt <- ggplot() +
                            text_size = 8,
                            text_angle = 0
                          ))+
-  labs(#title = "Hainich", 
-    #caption = "Orthophoto 2020: (c) GDI-TH",
-    col="captured individuals \n per ha and hour")+
+  labs(col="captured individuals \n per ha and hour",
+       caption="")+
   scale_y_continuous(expand = c(0, 0))+
   scale_x_continuous(expand = c(0, 0))+
   guides(fill = FALSE)
@@ -279,9 +284,59 @@ map_krb_capt <- ggplot() +
         legend.spacing.x = unit(0.15, 'cm'))+
   annotation_scale(line_width = 1, style="ticks", location="br",
                    pad_x = unit(0.33, "cm"),
+                   pad_y = unit(1, "cm"),)+
+  annotation_north_arrow(height=unit(0.45, "cm"),
+                         width=unit(0.3, "cm"),
+                         location="br",
+                         pad_x = unit(0.33, "cm"),
+                         pad_y = unit(0.33, "cm"),
+                         style=north_arrow_orienteering(
+                           line_width = 1,
+                           fill = c("black", "black"),
+                           text_size = 8,
+                           text_angle = 0
+                         ))+
+  #ylab("Latitude") + xlab("Longitude") +
+  theme(legend.position = "none")+ 
+  scale_y_continuous(breaks = c(50.956, 50.96, 50.964, 50.968), expand=c(0,0))+
+  scale_x_continuous(breaks = c( 10.638, 10.646), expand=c(0,0))
+
+map_krb_capt
+
+
+map_jon_capt <- ggplot() + 
+  geom_spatraster_rgb(data = ortho_jon, alpha=0.8) +
+  geom_sf(data=plots_captures_buf %>% filter(cluster == 7 & ncap > 0), 
+          aes(col=ncap_rel, fill=ncap_rel), linewidth=0.6, size=1, alpha=0.4)+
+  geom_sf(data=plots_captures_buf %>% filter(cluster == 7 & ncap == 0), 
+          linewidth=0.6, fill="grey75", alpha=0.4)+
+  theme_bw()+
+  geom_sf(data=falter_complete %>% filter(cluster == 7), 
+          fill="black", size= 1, alpha=0.25)+
+  #scale_fill_viridis_c(option = "magma", trans="reverse")+
+  scale_color_distiller(breaks=c(0.5, seq(10, 50, 10)),
+                        palette="YlOrRd", direction=1,
+                        limits = c(min(plots_captures$ncap_rel), max(plots_captures$ncap_rel)))+
+  scale_fill_distiller(breaks=c(0.5, seq(10, 50, 10)),
+                       palette="YlOrRd", direction=1,
+                       limits = c(min(plots_captures$ncap_rel), max(plots_captures$ncap_rel)))+
+  #scale_fill_continuous(trans = 'reverse', type = "viridis", name="number of connections")+
+  theme(axis.text=element_text(size=6),
+        axis.title=element_text(size=6),
+        legend.text = element_text(size = 9),
+        legend.title = element_text(size = 10),
+        legend.position = "bottom",
+        legend.direction = "horizontal",
+        legend.position.inside = c(0.16, 0.1),
+        legend.key.height = unit(0.2, "cm"),
+        legend.key.width = unit(0.45, "cm"),
+        legend.background = element_rect(fill=NA),
+        legend.spacing.x = unit(0.15, 'cm'))+
+  annotation_scale(line_width = 1, style="ticks", location="br",
+                   pad_x = unit(0.33, "cm"),
                    pad_y = unit(0.33, "cm"),)+
-  annotation_north_arrow(height=unit(0.65, "cm"),
-                         width=unit(0.4, "cm"),
+  annotation_north_arrow(height=unit(0.45, "cm"),
+                         width=unit(0.3, "cm"),
                          location="br",
                          pad_x = unit(0.33, "cm"),
                          pad_y = unit(0.9, "cm"),
@@ -293,13 +348,11 @@ map_krb_capt <- ggplot() +
                          ))+
   #ylab("Latitude") + xlab("Longitude") +
   theme(legend.position = "none")+ 
-  scale_y_continuous(breaks = c(50.956, 50.96, 50.964, 50.968), expand=c(0,0))+
-  scale_x_continuous(breaks = c(10.634, 10.638,10.642, 10.646), expand=c(0,0))+
-  labs(#title = "Kriegberg",
-    #caption = " "
-  )
+  scale_y_continuous(breaks = c(50.804, 50.807, 50.810, 50.813), expand=c(0,0))+
+  scale_x_continuous(breaks = c(10.835, 10.840,10.845, 10.850), expand=c(0,0))
 
-map_krb_capt
+map_jon_capt
+
 
 
 ##### network maps #####
@@ -323,7 +376,9 @@ map_nlp <- ggplot() +
   #scale_fill_fermenter(palette="viridis", n.breaks=6, limits=c(1,6))+
   #scale_fill_continuous(trans = 'reverse', type = "viridis", name="number of connections")+
   
-  theme(axis.text=element_text(size=6),
+  theme(
+        axis.text.y=element_blank(),
+        axis.text=element_text(size=6),
         axis.title=element_text(size=6),
         legend.text = element_text(size = 9),
         legend.title = element_text(size = 10),
@@ -386,9 +441,56 @@ map_krb <- ggplot() +
         legend.spacing.x = unit(0.15, 'cm'))+
   annotation_scale(line_width = 1, style="ticks", location="br",
                    pad_x = unit(0.33, "cm"),
+                   pad_y = unit(1, "cm"),)+
+  annotation_north_arrow(height=unit(0.45, "cm"),
+                         width=unit(0.3, "cm"),
+                         location="br",
+                         pad_x = unit(0.33, "cm"),
+                         pad_y = unit(0.33, "cm"),
+                         style=north_arrow_orienteering(
+                           line_width = 1,
+                           fill = c("black", "black"),
+                           text_size = 8,
+                           text_angle = 0
+                         ))+
+  #ylab("Latitude") + xlab("Longitude") +
+  theme(legend.position = "none",
+        axis.text.y=element_blank())+ 
+  scale_y_continuous(breaks = c(50.956, 50.96, 50.964, 50.968), expand=c(0,0))+
+  scale_x_continuous(breaks = c(10.638, 10.646), expand=c(0,0))
+
+map_krb
+
+
+### recapture map jonastal ###
+
+map_jon <- ggplot() + 
+  geom_spatraster_rgb(data = ortho_jon, alpha=0.8) +
+  
+  #annotation_map_tile(type="osm", zoom=16, zoomin=-2, alpha=0.7)+
+  geom_sf(data=plots2 %>% filter(cluster == 7), alpha=0.3, linewidth=0.5)+
+  geom_sf(data=falter_cons_jon %>% st_transform(crs=4326) , 
+          aes(fill=n), col=NA, alpha=1, linewidth=0)+
+  geom_sf(data=falter_plots_jon, aes(fill=n)) + 
+  theme_bw()+
+  scale_fill_viridis_c(trans = 'reverse', limits = c(6, 1))+
+  #scale_fill_continuous(trans = 'reverse', type = "viridis", name="number of connections")+
+  theme(axis.text=element_text(size=6),
+        axis.title=element_text(size=6),
+        legend.text = element_text(size = 9),
+        legend.title = element_text(size = 10),
+        legend.position = "inside",
+        legend.direction = "vertical",
+        legend.position.inside = c(0.16, 0.1),
+        legend.key.height = unit(0.2, "cm"),
+        legend.key.width = unit(0.45, "cm"),
+        legend.background = element_rect(fill=NA),
+        legend.spacing.x = unit(0.15, 'cm'))+
+  annotation_scale(line_width = 1, style="ticks", location="br",
+                   pad_x = unit(0.33, "cm"),
                    pad_y = unit(0.33, "cm"),)+
-  annotation_north_arrow(height=unit(0.65, "cm"),
-                         width=unit(0.4, "cm"),
+  annotation_north_arrow(height=unit(0.45, "cm"),
+                         width=unit(0.3, "cm"),
                          location="br",
                          pad_x = unit(0.33, "cm"),
                          pad_y = unit(0.9, "cm"),
@@ -400,25 +502,27 @@ map_krb <- ggplot() +
                          ))+
   #ylab("Latitude") + xlab("Longitude") +
   theme(legend.position = "none")+ 
-  scale_y_continuous(breaks = c(50.956, 50.96, 50.964, 50.968), expand=c(0,0))+
-  scale_x_continuous(breaks = c(10.634, 10.638,10.642, 10.646), expand=c(0,0))+
-  labs(#title = "Kriegberg",
-    caption = " ")
+  scale_y_continuous(breaks = c(50.804, 50.807, 50.810, 50.813), expand=c(0,0))+
+  scale_x_continuous(breaks = c(10.835, 10.840,10.845, 10.850), expand=c(0,0))
 
-map_krb
-
+map_jon
 
 
 ##### combine all plots #####
 
-png("figures/figure3_maps_nlp_krb.png", width=4500, height=5600, res=600)
-ggarrange(
+png("figures/figure3_maps_jon_krb_nlp.png", width=4500, height=5200, res=600)
   ggarrange(
-    map_krb_capt, map_krb, nrow=1, widths = c(0.7, 0.7), align="h"),
-  NULL,
-  ggarrange( 
-    map_nlp_capt, map_nlp, nrow=1, widths = c(1, 1), align="h"),
-  nrow=3, heights=c(0.55,-0.01,1), labels = c("A", "", "B"))
+    ggarrange(NULL, 
+      map_jon_capt, 
+      NULL,
+    ggarrange(
+      NULL, map_krb_capt, map_krb, nrow=1, widths = c(0.1, 0.5, 0.5), align="v"),
+    widths=c(0.05, 0.5, 0.05, 1.1), nrow=1, labels=c("", "A", " ", "B")),
+    NULL,
+    ggarrange( 
+      map_nlp_capt, NULL, map_nlp, nrow=1, 
+      widths = c(1, -0.015, 1), align="v"),
+    nrow=3, heights=c(0.55,-0.02,1.4), labels = c("", "", "C"))
 dev.off()
 
 
