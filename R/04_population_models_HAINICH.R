@@ -202,8 +202,6 @@ overall_CJS(X=hist,freq=freq,rounding = 3)
 ###### Daily values for the best model #####
 
 selmodel <- summary[1,]
-topmodel <- models[selmodel$i,]
-
 mymod <- models_output[[selmodel$i]]
 
 para <- strsplit(rownames(mymod$results$real), split=" ") %>% as.data.frame()
@@ -254,6 +252,6 @@ d <- ggplot(data=df, aes(x=date, y=N)) + geom_point() + theme_bw() +
   geom_line(lwd=1) + 
   geom_linerange(aes(ymin = N.lcl, ymax = N.ucl)) 
 
-png("figures/figureX_daily_estimates_hainich.png", width=4000, height=3000, res=600)
+png("figures/figureX_daily_estimates_hainich.png", width=4000, height=1500, res=600)
 ggpubr::ggarrange(a,  d, align="hv")
 dev.off()
