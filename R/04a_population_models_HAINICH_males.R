@@ -123,7 +123,7 @@ pent.dot = list(formula = ~ 1)
 pent.time = list(formula = ~ Time)
 pent.timesq = list(formula = ~ Time + I(Time^2))
 N.dot = list(formula = ~ 1)
-
+N.time = list(formula = ~ Time)
 
 # create all combinations of model parameters
 models <- create.model.list("POPAN")

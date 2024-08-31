@@ -176,7 +176,10 @@ ts_plot <- ggplot(falter_ts %>% filter(sex != "unknown"),
 
 ts_plot
 
-png("figures/figure1_captures_per_day.png", width=2500, height=1800, res=300)
+png("figures/figure1_captures_per_day.png", width=2500*2, height=1800*2, res=600)
 ts_plot
 dev.off()
 
+pdf("figures/figure1_captures_per_day.pdf", width=8, height=7)
+ts_plot
+dev.off()

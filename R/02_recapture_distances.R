@@ -226,12 +226,17 @@ violin <- ggplot(falter_lines  %>% filter(sex != "unknown" &
 violin
 
 
-png("figures/figure2_flight_distances.png", res=300, width=2500, height=1800)
+png("figures/figure2_flight_distances.png",  width=2500*2, height=1800*2, res=600)
 ggarrange(violin, ggplot() + theme_void(), hist, align = c("hv"), nrow=3, 
           heights=c(0.9,-0.25,1.2), 
           labels=c("A", "", "B"))
 dev.off()
 
+pdf("figures/figure2_flight_distances.pdf", width=8, height=7)
+ggarrange(violin, ggplot() + theme_void(), hist, align = c("hv"), nrow=3, 
+          heights=c(0.9,-0.25,1.2), 
+          labels=c("A", "", "B"))
+dev.off()
 
 
 #### residence time

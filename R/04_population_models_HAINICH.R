@@ -157,6 +157,7 @@ dat <- rbind(round(colMeans(mymod.Phi[,1:4]),5),
 
 dat$parameter <- c("Phi", "p", "pent", "N")
 dat$model = mymod$model.name
+dat$i = i
 
 all <- rbind(all, dat)
 
@@ -164,7 +165,7 @@ all <- rbind(all, dat)
 
 all$estimate_CI <- paste0(round(all$estimate, 2), " [", round(all$lcl, 3), "-", round(all$ucl, 3), "]")
 
-summary_table <- all %>% group_by(model) %>% pivot_wider(id_cols=c("model"), 
+summary_table <- all %>% group_by(model, i) %>% pivot_wider(id_cols=c("model", "i"), 
                                                          names_from="parameter",
                                                          values_from="estimate_CI") 
 
@@ -175,7 +176,12 @@ summary$weightcum <- cumsum(summary$weight)
 N <- all %>% filter(parameter == "N")
 
 # Population density
-summary$ind_per_ha <- paste0(round(N$estimate/uniqueN(falter_complete$plot_id), digits=0), " [", round(N$lcl/uniqueN(falter_complete$plot_id), 0), "-", round(N$ucl/uniqueN(falter_complete$plot_id), 0), "]")
+ind_per_ha <- data.frame(model = N$model,
+             ind_per_ha = paste0(round(N$estimate/uniqueN(falter_complete$plot_id), digits=0), " [", 
+                             round(N$lcl/uniqueN(falter_complete$plot_id), 0), "-", 
+                             round(N$ucl/uniqueN(falter_complete$plot_id), 0), "]"))
+
+summary <- summary %>% left_join(ind_per_ha, by="model")
 
 fwrite(summary %>% select(!weightcum),"data/population_models/models_summary_hainich.csv")
 writexl::write_xlsx(summary %>% select(!weightcum),"data/population_models/models_summary_hainich.xlsx")
@@ -191,3 +197,63 @@ capt.hist.gof$freq <- 1
 freq <- capt.hist.gof$freq
 
 overall_CJS(X=hist,freq=freq,rounding = 3) 
+
+
+###### Daily values for the best model #####
+
+selmodel <- summary[1,]
+topmodel <- models[selmodel$i,]
+
+mymod <- models_output[[selmodel$i]]
+
+para <- strsplit(rownames(mymod$results$real), split=" ") %>% as.data.frame()
+para <- para[1,] %>% t()
+
+mymod.Phi <- mymod$results$real[para == "Phi", ]
+mymod.p <- mymod$results$real[para == "p", ]
+mymod.pent <- mymod$results$real[para == "pent", ]
+mymod.N <- mymod$results$real[para == "N", ]
+
+df <- data.frame(date = sort(unique(falter_complete$date)),
+                 N = mymod$results$derived$`N Population Size`$estimate,
+                 N.lcl = mymod$results$derived$`N Population Size`$lcl,
+                 N.ucl = mymod$results$derived$`N Population Size`$ucl,
+                 p = mymod.p$estimate,
+                 p.lcl = mymod.p$lcl,
+                 p.ucl = mymod.p$ucl,
+                 pent = c(NA,mymod.pent$estimate),
+                 pent.lcl = c(NA, mymod.pent$lcl),
+                 pent.ucl = c(NA, mymod.pent$ucl),
+                 Phi = c(mymod.Phi$estimate, NA),
+                 Phi.lcl = c( mymod.Phi$lcl, NA),
+                 Phi.ucl = c( mymod.Phi$ucl, NA)) %>% cbind(weather %>% select(!date))
+
+mod <- glm(data=df, p ~ sundur + temp + wind, family = "gaussian")
+summary(mod)
+
+mod <- glm(data=df, Phi ~ date)
+summary(mod)
+
+ggplot(data=df, aes(x=sundur, y=p)) + geom_point() + theme_bw() + geom_smooth()
+ggplot(data=df, aes(x=temp, y=p)) + geom_point() + theme_bw() + geom_smooth()
+ggplot(data=df, aes(x=wind, y=p)) + geom_point() + theme_bw() + geom_smooth()
+
+a <- ggplot(data=df, aes(x=date, y=p)) + geom_point() + theme_bw() +
+  geom_line(lwd=1) + 
+  geom_linerange(aes(ymin = p.lcl, ymax = p.ucl)) 
+
+b <- ggplot(data=df, aes(x=date, y=pent)) + geom_point() + theme_bw() +
+  geom_line(lwd=1) + 
+  geom_linerange(aes(ymin = pent.lcl, ymax = pent.ucl)) 
+
+c <- ggplot(data=df, aes(x=date, y=Phi)) + geom_point() + theme_bw() +
+  geom_line(lwd=1) + 
+  geom_linerange(aes(ymin = Phi.lcl, ymax = Phi.ucl)) 
+
+d <- ggplot(data=df, aes(x=date, y=N)) + geom_point() + theme_bw() +
+  geom_line(lwd=1) + 
+  geom_linerange(aes(ymin = N.lcl, ymax = N.ucl)) 
+
+png("figures/figureX_daily_estimates_hainich.png", width=4000, height=3000, res=600)
+ggpubr::ggarrange(a,  d, align="hv")
+dev.off()
