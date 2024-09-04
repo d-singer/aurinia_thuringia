@@ -1,3 +1,7 @@
+library(tidyverse)
+library(data.table)
+
+
 all <- fread("data/hainich_daily_estimates.csv") %>% mutate(sex = "total")
 females <- fread("data/hainich_daily_estimates_females.csv")%>% mutate(sex = "female")
 males <- fread("data/hainich_daily_estimates_males.csv")%>% mutate(sex = "male")
@@ -48,7 +52,7 @@ d <- ggplot(data=df,
   scale_fill_manual(values=c( "#2CA02C","#1F77B4", "#D55E00"))+
   scale_color_manual(values=c( "#2CA02C","#1F77B4", "#D55E00"))+
   scale_shape_manual(values=c(25,24,21))+
-  theme(legend.position = "none")
+  theme(legend.position = "bottom")
 d
 
 all <- fread("data/kriegberg_daily_estimates.csv") %>% mutate(sex = "total")
@@ -115,3 +119,8 @@ dev.off()
 png("figures/figure_daily_estimates.png", width=5000, height=3500, res=600)
 ggpubr::ggarrange(a, d, e, g, align="v", ncol=2, nrow=2, labels=c("A", "", "B", ""))
 dev.off()
+
+png("figures/figure_daily_estimates_hainich.png", width=4700, height=2000, res=600)
+ggpubr::ggarrange(a, d, align="hv", ncol=2, nrow=1)
+dev.off()
+
