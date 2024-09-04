@@ -183,8 +183,6 @@ overall_CJS(X=hist,freq=freq,rounding = 3)
 ###### Daily values for the best model #####
 
 selmodel <- summary[1,]
-topmodel <- models[selmodel$i,]
-
 mymod <- models_output[[selmodel$i]]
 
 para <- strsplit(rownames(mymod$results$real), split=" ") %>% as.data.frame()
@@ -196,6 +194,7 @@ mymod.pent <- mymod$results$real[para == "pent", ]
 mymod.N <- mymod$results$real[para == "N", ]
 
 df <- data.frame(date = sort(unique(falter_complete$date)),
+                 #sex = c(rep("female", 12), rep("male", 12), rep("unknown", 12)),
                  N = mymod$results$derived$`N Population Size`$estimate,
                  N.lcl = mymod$results$derived$`N Population Size`$lcl,
                  N.ucl = mymod$results$derived$`N Population Size`$ucl,
@@ -207,34 +206,8 @@ df <- data.frame(date = sort(unique(falter_complete$date)),
                  pent.ucl = c(NA, mymod.pent$ucl),
                  Phi = c(mymod.Phi$estimate, NA),
                  Phi.lcl = c( mymod.Phi$lcl, NA),
-                 Phi.ucl = c( mymod.Phi$ucl, NA)) %>% cbind(weather %>% select(!date))
+                 Phi.ucl = c( mymod.Phi$ucl, NA)
+) %>% cbind(weather %>% select(!date))
 
-mod <- glm(data=df, p ~ sundur + temp + wind, family = "gaussian")
-summary(mod)
 
-mod <- glm(data=df, Phi ~ date)
-summary(mod)
-
-ggplot(data=df, aes(x=sundur, y=p)) + geom_point() + theme_bw() + geom_smooth()
-ggplot(data=df, aes(x=temp, y=p)) + geom_point() + theme_bw() + geom_smooth()
-ggplot(data=df, aes(x=wind, y=p)) + geom_point() + theme_bw() + geom_smooth()
-
-a <- ggplot(data=df, aes(x=date, y=p)) + geom_point() + theme_bw() +
-  geom_line(lwd=1) + 
-  geom_linerange(aes(ymin = p.lcl, ymax = p.ucl)) 
-
-b <- ggplot(data=df, aes(x=date, y=pent)) + geom_point() + theme_bw() +
-  geom_line(lwd=1) + 
-  geom_linerange(aes(ymin = pent.lcl, ymax = pent.ucl)) 
-
-c <- ggplot(data=df, aes(x=date, y=Phi)) + geom_point() + theme_bw() +
-  geom_line(lwd=1) + 
-  geom_linerange(aes(ymin = Phi.lcl, ymax = Phi.ucl)) 
-
-d <- ggplot(data=df, aes(x=date, y=N)) + geom_point() + theme_bw() +
-  geom_line(lwd=1) + 
-  geom_linerange(aes(ymin = N.lcl, ymax = N.ucl)) 
-
-png("figures/figureX_daily_estimates_kriegberg.png", width=4000, height=1500, res=600)
-ggpubr::ggarrange(a, d, align="hv")
-dev.off()
+data.table::fwrite(df, "data/kriegberg_daily_estimates.csv")

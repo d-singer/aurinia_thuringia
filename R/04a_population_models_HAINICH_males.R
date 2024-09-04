@@ -123,7 +123,6 @@ pent.dot = list(formula = ~ 1)
 pent.time = list(formula = ~ Time)
 pent.timesq = list(formula = ~ Time + I(Time^2))
 N.dot = list(formula = ~ 1)
-N.time = list(formula = ~ Time)
 
 # create all combinations of model parameters
 models <- create.model.list("POPAN")
@@ -138,7 +137,6 @@ model.table <- models_output$model.table
 fwrite(model.table, "data/population_models/models_output_hainich_male.csv")
 writexl::write_xlsx(model.table,"data/population_models/models_output_hainich_male.xlsx")
 
-# empty data frame to be filled in loop
 all <- data.frame()
 
 for(i in 1:nrow(model.table))
@@ -160,6 +158,7 @@ for(i in 1:nrow(model.table))
   
   dat$parameter <- c("Phi", "p", "pent", "N")
   dat$model = mymod$model.name
+  dat$i = i
   
   all <- rbind(all, dat)
   
@@ -167,20 +166,23 @@ for(i in 1:nrow(model.table))
 
 all$estimate_CI <- paste0(round(all$estimate, 2), " [", round(all$lcl, 3), "-", round(all$ucl, 3), "]")
 
-summary_table <- all %>% group_by(model) %>% pivot_wider(id_cols=c("model"), 
-                                                         names_from="parameter",
-                                                         values_from="estimate_CI") 
+summary_table <- all %>% group_by(model, i) %>% pivot_wider(id_cols=c("model", "i"), 
+                                                            names_from="parameter",
+                                                            values_from="estimate_CI") 
 
 summary <- summary_table %>% left_join(model.table[5:length(model.table)], by="model") %>% arrange(AICc)
 
-
 summary$weightcum <- cumsum(summary$weight)
-# Population density
+
 N <- all %>% filter(parameter == "N")
 
-summary$ind_per_ha <- paste0(round(N$estimate/uniqueN(plots$plot_id), digits=0), " [", 
-                             round(N$lcl/uniqueN(plots$plot_id), 0), "-", 
-                             round(N$ucl/uniqueN(plots$plot_id), 0), "]")
+# Population density
+ind_per_ha <- data.frame(model = N$model,
+                         ind_per_ha = paste0(round(N$estimate/uniqueN(falter_complete$plot_id), digits=0), " [", 
+                                             round(N$lcl/uniqueN(falter_complete$plot_id), 0), "-", 
+                                             round(N$ucl/uniqueN(falter_complete$plot_id), 0), "]"))
+
+summary <- summary %>% left_join(ind_per_ha, by="model")
 
 
 fwrite(summary %>% select(!weightcum),"data/population_models/models_summary_hainich_male.csv")
@@ -198,3 +200,37 @@ capt.hist.gof$freq <- 1
 freq <- capt.hist.gof$freq
 
 overall_CJS(X=hist,freq=freq,rounding = 3) 
+
+
+###### Daily values for the best model #####
+
+bestmod <- fread("data/population_models/models_summary_hainich.csv") %>%
+  select(model)
+
+
+selmodel <- summary[summary$model == bestmod$model[1],]
+mymod <- models_output[[selmodel$i]]
+
+para <- strsplit(rownames(mymod$results$real), split=" ") %>% as.data.frame()
+para <- para[1,] %>% t()
+
+mymod.Phi <- mymod$results$real[para == "Phi", ]
+mymod.p <- mymod$results$real[para == "p", ]
+mymod.pent <- mymod$results$real[para == "pent", ]
+mymod.N <- mymod$results$real[para == "N", ]
+
+df <- data.frame(date = sort(unique(falter_complete$date)),
+                 N = mymod$results$derived$`N Population Size`$estimate,
+                 N.lcl = mymod$results$derived$`N Population Size`$lcl,
+                 N.ucl = mymod$results$derived$`N Population Size`$ucl,
+                 p = mymod.p$estimate,
+                 p.lcl = mymod.p$lcl,
+                 p.ucl = mymod.p$ucl,
+                 pent = c(NA,mymod.pent$estimate),
+                 pent.lcl = c(NA, mymod.pent$lcl),
+                 pent.ucl = c(NA, mymod.pent$ucl),
+                 Phi = c(mymod.Phi$estimate, NA),
+                 Phi.lcl = c( mymod.Phi$lcl, NA),
+                 Phi.ucl = c( mymod.Phi$ucl, NA)) %>% cbind(weather %>% select(!date))
+
+data.table::fwrite(df, "data/hainich_daily_estimates_males.csv")

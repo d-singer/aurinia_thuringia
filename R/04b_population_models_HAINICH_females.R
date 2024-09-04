@@ -137,6 +137,7 @@ fwrite(model.table, "data/population_models/models_output_hainich_female.csv")
 writexl::write_xlsx(model.table,"data/population_models/models_output_hainich_female.xlsx")
 
 # empty data frame to be filled in loop
+
 all <- data.frame()
 
 for(i in 1:nrow(model.table))
@@ -158,6 +159,7 @@ for(i in 1:nrow(model.table))
   
   dat$parameter <- c("Phi", "p", "pent", "N")
   dat$model = mymod$model.name
+  dat$i = i
   
   all <- rbind(all, dat)
   
@@ -165,24 +167,29 @@ for(i in 1:nrow(model.table))
 
 all$estimate_CI <- paste0(round(all$estimate, 2), " [", round(all$lcl, 3), "-", round(all$ucl, 3), "]")
 
-summary_table <- all %>% group_by(model) %>% pivot_wider(id_cols=c("model"), 
-                                                         names_from="parameter",
-                                                         values_from="estimate_CI") 
+summary_table <- all %>% group_by(model, i) %>% pivot_wider(id_cols=c("model", "i"), 
+                                                            names_from="parameter",
+                                                            values_from="estimate_CI") 
 
 summary <- summary_table %>% left_join(model.table[5:length(model.table)], by="model") %>% arrange(AICc)
 
 summary$weightcum <- cumsum(summary$weight)
-# Population density
+
 N <- all %>% filter(parameter == "N")
 
-summary$ind_per_ha <- paste0(round(N$estimate/uniqueN(plots$plot_id), digits=0), " [", 
-                             round(N$lcl/uniqueN(plots$plot_id), 0), "-", 
-                             round(N$ucl/uniqueN(plots$plot_id), 0), "]")
+# Population density
+ind_per_ha <- data.frame(model = N$model,
+                         ind_per_ha = paste0(round(N$estimate/uniqueN(falter_complete$plot_id), digits=0), " [", 
+                                             round(N$lcl/uniqueN(falter_complete$plot_id), 0), "-", 
+                                             round(N$ucl/uniqueN(falter_complete$plot_id), 0), "]"))
+
+summary <- summary %>% left_join(ind_per_ha, by="model")
 
 
-fwrite(summary,"data/population_models/models_summary_hainich_female.csv")
-writexl::write_xlsx(summary,"data/population_models/models_summary_hainich_female.xlsx")
-writexl::write_xlsx(summary %>% filter(cumsum(weight) <= 0.95),"data/population_models/models_summary_hainich_female_weight95.xlsx")
+fwrite(summary %>% select(!weightcum),"data/population_models/models_summary_hainich_male.csv")
+writexl::write_xlsx(summary %>% select(!weightcum),"data/population_models/models_summary_hainich_male.xlsx")
+writexl::write_xlsx(summary %>% filter(weightcum <= 0.95) %>% select(!weightcum),"data/population_models/models_summary_hainich_male_weight95.xlsx")
+
 
 
 # GOF test
@@ -194,3 +201,79 @@ capt.hist.gof$freq <- 1
 freq <- capt.hist.gof$freq
 
 overall_CJS(X=hist,freq=freq,rounding = 3) 
+
+
+###### Daily values for the best model #####
+
+bestmod <- fread("data/population_models/models_summary_hainich.csv") %>%
+  select(model)
+
+
+selmodel <- summary[summary$model == bestmod$model[1],]
+mymod <- models_output[[selmodel$i]]
+
+para <- strsplit(rownames(mymod$results$real), split=" ") %>% as.data.frame()
+para <- para[1,] %>% t()
+
+mymod.Phi <- mymod$results$real[para == "Phi", ]
+mymod.p <- mymod$results$real[para == "p", ]
+mymod.pent <- mymod$results$real[para == "pent", ]
+mymod.N <- mymod$results$real[para == "N", ]
+
+df <- data.frame(date = sort(unique(falter_complete$date)),
+                 N = mymod$results$derived$`N Population Size`$estimate,
+                 N.lcl = mymod$results$derived$`N Population Size`$lcl,
+                 N.ucl = mymod$results$derived$`N Population Size`$ucl,
+                 p = mymod.p$estimate,
+                 p.lcl = mymod.p$lcl,
+                 p.ucl = mymod.p$ucl,
+                 pent = c(NA,mymod.pent$estimate),
+                 pent.lcl = c(NA, mymod.pent$lcl),
+                 pent.ucl = c(NA, mymod.pent$ucl),
+                 Phi = c(mymod.Phi$estimate, NA),
+                 Phi.lcl = c( mymod.Phi$lcl, NA),
+                 Phi.ucl = c( mymod.Phi$ucl, NA)) %>% cbind(weather %>% select(!date))
+
+mod <- glm(data=df, p ~ sundur + temp + wind, family = "gaussian")
+summary(mod)
+
+mod <- glm(data=df, Phi ~ date)
+summary(mod)
+
+ggplot(data=df, aes(x=sundur, y=p)) + geom_point() + theme_bw() + geom_smooth()
+ggplot(data=df, aes(x=temp, y=p)) + geom_point() + theme_bw() + geom_smooth()
+ggplot(data=df, aes(x=wind, y=p)) + geom_point() + theme_bw() + geom_smooth()
+
+a <- ggplot(data=df, aes(x=date, y=p)) + 
+  geom_point() + 
+  theme_bw() +
+  geom_line(lwd=1) + 
+  geom_ribbon(aes(ymin = p.lcl, ymax = p.ucl), alpha = 0.1)
+
+b <- ggplot(data=df, aes(x=date, y=pent)) + geom_point() + theme_bw() +
+  geom_point() + 
+  theme_bw() +
+  geom_line(lwd=1) + 
+  #geom_linerange(aes(ymin = p.lcl, ymax = p.ucl)) +
+  geom_ribbon(aes(ymin = pent.lcl, ymax = pent.ucl), alpha = 0.1)
+
+c <- ggplot(data=df, aes(x=date, y=Phi)) + geom_point() + theme_bw() +
+  geom_point() + 
+  theme_bw() +
+  geom_line(lwd=1) + 
+  #geom_linerange(aes(ymin = p.lcl, ymax = p.ucl)) +
+  geom_ribbon(aes(ymin = Phi.lcl, ymax = Phi.ucl), alpha = 0.1)
+
+d <- ggplot(data=df, aes(x=date, y=N)) + geom_point() + theme_bw() +
+  geom_point() + 
+  theme_bw() +
+  geom_line(lwd=1) + 
+  #geom_linerange(aes(ymin = p.lcl, ymax = p.ucl)) +
+  geom_ribbon(aes(ymin = N.lcl, ymax = N.ucl), alpha = 0.1)
+d
+
+png("figures/figureX_daily_estimates_hainich_females.png", width=4000, height=1500, res=600)
+ggpubr::ggarrange(a,  d, align="hv")
+dev.off()
+
+data.table::fwrite(df, "data/hainich_daily_estimates_females.csv")

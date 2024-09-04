@@ -69,9 +69,12 @@ capt.hist<-spread(capt.hist,event,detect,fill = 0)
 
 capt.hist.gof <- capt.hist 
 
+
 capt.hist<-group_by(capt.hist,id)
 
-capt.hist<-unite(capt.hist,"ch",3:14,sep = "")
+capt.hist.sex <- capt.hist
+
+capt.hist <- unite(capt.hist,"ch",3:14,sep = "")
 
 
 
@@ -87,7 +90,7 @@ timeints <- difftime(dates[2:length(dates)],dates[1:length(dates)-1]) %>% as.num
 timeints
 
 #Process data
-Popt.pr <- process.data(Popt, begin.time = 1, model = "POPAN", 
+Popt.pr <- process.data(Popt, begin.time = 1, model = "POPAN", #groups = c( "sex"),
                         time.intervals = timeints %>% as.numeric())
 Popt.ddl=make.design.data(Popt.pr)
 Popt.ddl
@@ -121,6 +124,7 @@ pent.dot = list(formula = ~ 1)
 pent.time = list(formula = ~ Time)
 pent.timesq = list(formula = ~ Time + I(Time^2))
 N.dot = list(formula = ~ 1)
+#N.sex = list(formula = ~ sex)
 
 # create all combinations of model parameters
 models <- create.model.list("POPAN")
@@ -136,6 +140,7 @@ fwrite(model.table, "data/population_models/models_output_hainich.csv")
 writexl::write_xlsx(model.table,"data/population_models/models_output_hainich.xlsx")
 
 # empty data frame to be filled in loop
+
 all <- data.frame()
 
 for(i in 1:nrow(model.table))
@@ -213,6 +218,7 @@ mymod.pent <- mymod$results$real[para == "pent", ]
 mymod.N <- mymod$results$real[para == "N", ]
 
 df <- data.frame(date = sort(unique(falter_complete$date)),
+                 #sex = c(rep("female", 12), rep("male", 12), rep("unknown", 12)),
                  N = mymod$results$derived$`N Population Size`$estimate,
                  N.lcl = mymod$results$derived$`N Population Size`$lcl,
                  N.ucl = mymod$results$derived$`N Population Size`$ucl,
@@ -224,34 +230,8 @@ df <- data.frame(date = sort(unique(falter_complete$date)),
                  pent.ucl = c(NA, mymod.pent$ucl),
                  Phi = c(mymod.Phi$estimate, NA),
                  Phi.lcl = c( mymod.Phi$lcl, NA),
-                 Phi.ucl = c( mymod.Phi$ucl, NA)) %>% cbind(weather %>% select(!date))
+                 Phi.ucl = c( mymod.Phi$ucl, NA)
+                 ) %>% cbind(weather %>% select(!date))
 
-mod <- glm(data=df, p ~ sundur + temp + wind, family = "gaussian")
-summary(mod)
 
-mod <- glm(data=df, Phi ~ date)
-summary(mod)
-
-ggplot(data=df, aes(x=sundur, y=p)) + geom_point() + theme_bw() + geom_smooth()
-ggplot(data=df, aes(x=temp, y=p)) + geom_point() + theme_bw() + geom_smooth()
-ggplot(data=df, aes(x=wind, y=p)) + geom_point() + theme_bw() + geom_smooth()
-
-a <- ggplot(data=df, aes(x=date, y=p)) + geom_point() + theme_bw() +
-  geom_line(lwd=1) + 
-  geom_linerange(aes(ymin = p.lcl, ymax = p.ucl)) 
-
-b <- ggplot(data=df, aes(x=date, y=pent)) + geom_point() + theme_bw() +
-  geom_line(lwd=1) + 
-  geom_linerange(aes(ymin = pent.lcl, ymax = pent.ucl)) 
-
-c <- ggplot(data=df, aes(x=date, y=Phi)) + geom_point() + theme_bw() +
-  geom_line(lwd=1) + 
-  geom_linerange(aes(ymin = Phi.lcl, ymax = Phi.ucl)) 
-
-d <- ggplot(data=df, aes(x=date, y=N)) + geom_point() + theme_bw() +
-  geom_line(lwd=1) + 
-  geom_linerange(aes(ymin = N.lcl, ymax = N.ucl)) 
-
-png("figures/figureX_daily_estimates_hainich.png", width=4000, height=1500, res=600)
-ggpubr::ggarrange(a,  d, align="hv")
-dev.off()
+data.table::fwrite(df, "data/hainich_daily_estimates.csv")
