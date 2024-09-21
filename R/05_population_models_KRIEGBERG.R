@@ -185,6 +185,8 @@ overall_CJS(X=hist,freq=freq,rounding = 3)
 selmodel <- summary[1,]
 mymod <- models_output[[selmodel$i]]
 
+summary(mymod)
+
 para <- strsplit(rownames(mymod$results$real), split=" ") %>% as.data.frame()
 para <- para[1,] %>% t()
 

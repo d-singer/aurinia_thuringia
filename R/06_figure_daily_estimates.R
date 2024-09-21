@@ -22,7 +22,9 @@ a <- ggplot(data=df,
   scale_fill_manual(values=c( "#2CA02C","#1F77B4", "#D55E00"))+
   scale_color_manual(values=c( "#2CA02C","#1F77B4", "#D55E00"))+
   scale_shape_manual(values=c(25,24,21))+
-  theme(legend.position = "none")
+  theme(legend.position = "none") +
+  ylab("Capture probability (p)")+
+  xlab("Date")
 
 a
 
@@ -39,7 +41,8 @@ c <- ggplot(data=df,
   scale_fill_manual(values=c( "#2CA02C","#1F77B4", "#D55E00"))+
   scale_color_manual(values=c( "#2CA02C","#1F77B4", "#D55E00"))+
   scale_shape_manual(values=c(25,24,21))+
-  theme(legend.position = "none")
+  theme(legend.position = "none")+
+  xlab("Date")
 c
 
 d <- ggplot(data=df, 
@@ -52,7 +55,9 @@ d <- ggplot(data=df,
   scale_fill_manual(values=c( "#2CA02C","#1F77B4", "#D55E00"))+
   scale_color_manual(values=c( "#2CA02C","#1F77B4", "#D55E00"))+
   scale_shape_manual(values=c(25,24,21))+
-  theme(legend.position = "bottom")
+  theme(legend.position = "none") +
+  ylab("Population size (N)")+
+  xlab("Date")
 d
 
 all <- fread("data/kriegberg_daily_estimates.csv") %>% mutate(sex = "total")
@@ -76,7 +81,9 @@ e <- ggplot(data=df,
   scale_color_manual(values=c( "#2CA02C","#1F77B4", "#D55E00"))+
   scale_shape_manual(values=c(25,24,21))+
   theme(legend.position = "bottom")+
-  xlim(c(ymd(20200517), ymd(20200609)))
+  xlim(c(ymd(20200516), ymd(20200609)))+
+  ylab("Capture probability (p)")+
+  xlab("Date")
 
 e
 
@@ -93,7 +100,8 @@ f <- ggplot(data=df,
   scale_color_manual(values=c( "#2CA02C","#1F77B4", "#D55E00"))+
   scale_shape_manual(values=c(25,24,21))+
   theme(legend.position = "bottom")+
-  xlim(c(ymd(20200517), ymd(20200609)))
+  xlim(c(ymd(20200516), ymd(20200609)))+
+  xlab("Date")
 f
 
 g <- ggplot(data=df, 
@@ -107,20 +115,13 @@ g <- ggplot(data=df,
   scale_color_manual(values=c( "#2CA02C","#1F77B4", "#D55E00"))+
   scale_shape_manual(values=c(25,24,21))+
   theme(legend.position = "none")+
-  xlim(c(ymd(20200517), ymd(20200609)))
+  xlim(c(ymd(20200516), ymd(20200609)))+
+  ylab("Population size (N)")+
+  xlab("Date")
 g
 
 
 
-png("figures/figureX_daily_estimates.png", width=5000, height=3500, res=600)
-ggpubr::ggarrange(a,c, d, e,f, g, align="hv", ncol=3, nrow=2, labels=c("A", "", "", "B", ""))
-dev.off()
-
 png("figures/figure_daily_estimates.png", width=5000, height=3500, res=600)
 ggpubr::ggarrange(a, d, e, g, align="v", ncol=2, nrow=2, labels=c("A", "", "B", ""))
 dev.off()
-
-png("figures/figure_daily_estimates_hainich.png", width=4700, height=2000, res=600)
-ggpubr::ggarrange(a, d, align="hv", ncol=2, nrow=1)
-dev.off()
-
