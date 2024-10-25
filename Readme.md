@@ -1,10 +1,8 @@
 # Large, but dispersal-limited populations of the Marsh Fritillary Euphydryas aurinia persist on abandoned military training areas three decades after the end of the cold war
 
-Data and R code related to the paper C. Schröer, D. Singer and J. Kamp (2024)
+Data and R code related to the paper C. Schröer, D. Singer and J. Kamp (2024): Large, but dispersal-limited populations of the Marsh Fritillary Euphydryas aurinia persist on abandoned military training areas three decades after the end of the cold war. Ecology and Evolution 14 (10) e70459
 
-Please cite any use of this work: 
-
-XXX
+Please cite any use of this work:  https://doi.org/10.1002/ece3.70459
 
 
 # R scripts
